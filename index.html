@@ -228,13 +228,21 @@
         };
 
         // État des antennes (allumées = true, éteintes = false)
-        let antennas = {
+        // Charger l'état depuis localStorage ou initialiser
+        let antennas = JSON.parse(localStorage.getItem('antennas')) || {
             1: true,
             2: true,
             3: true,
             4: true,
             5: true
         };
+
+        // Mettre à jour l'affichage des antennes en fonction de l'état chargé
+        for (let i = 1; i <= 5; i++) {
+            if (!antennas[i]) {
+                document.getElementById(`antenna${i}`).classList.add('off');
+            }
+        }
 
         // Récupère le paramètre 'team' dans l'URL
         const urlParams = new URLSearchParams(window.location.search);
@@ -245,6 +253,21 @@
             document.getElementById(`team${teamNumber}-page`).style.display = 'flex';
         }
 
+        // Écouter les changements de localStorage pour synchroniser les antennes
+        window.addEventListener('storage', function(event) {
+            if (event.key === 'antennas') {
+                antennas = JSON.parse(event.newValue);
+                for (let i = 1; i <= 5; i++) {
+                    if (antennas[i]) {
+                        document.getElementById(`antenna${i}`).classList.remove('off');
+                    } else {
+                        document.getElementById(`antenna${i}`).classList.add('off');
+                    }
+                }
+                checkAllAntennasOff();
+            }
+        });
+
         // Fonction pour vérifier le code
         function checkCode(teamNumber, correctCode) {
             const input = document.getElementById(`team${teamNumber}-input`);
@@ -252,15 +275,13 @@
 
             if (enteredCode === correctCode) {
                 // Éteindre l'antenne
-                document.getElementById(`antenna${teamNumber}`).classList.add('off');
                 antennas[teamNumber] = false;
+                localStorage.setItem('antennas', JSON.stringify(antennas));
+                document.getElementById(`antenna${teamNumber}`).classList.add('off');
                 input.value = '';
 
                 // Afficher le message de succès pour l'équipe
                 document.getElementById('team-success-message').style.display = 'block';
-                setTimeout(() => {
-                    document.getElementById('team-success-message').style.display = 'none';
-                }, 3000); // Le message disparaît après 3 secondes
 
                 checkAllAntennasOff();
             } else {
@@ -283,6 +304,9 @@
                 document.getElementById('final-message').style.display = 'block';
             }
         }
+
+        // Initialiser l'affichage du message final si toutes les antennes sont déjà éteintes
+        checkAllAntennasOff();
     </script>
 </body>
 </html>

@@ -40,7 +40,7 @@
             box-shadow: none;
             animation: none;
         }
-        #message {
+        #final-message {
             position: fixed;
             top: 50%;
             left: 50%;
@@ -53,7 +53,23 @@
             display: none;
             z-index: 100;
             max-width: 80%;
-            text-align: left;
+            text-align: center;
+            line-height: 1.6;
+        }
+        #team-success-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            color: #00FF00;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 30px;
+            border-radius: 10px;
+            display: none;
+            z-index: 100;
+            max-width: 80%;
+            text-align: center;
             line-height: 1.6;
         }
         #error-message {
@@ -63,11 +79,12 @@
             transform: translate(-50%, -50%);
             font-size: 36px;
             color: #FF0000;
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: rgba(0, 0, 0, 0.8);
             padding: 20px;
             border-radius: 10px;
             display: none;
             z-index: 100;
+            text-align: center;
         }
         .team-page {
             position: fixed;
@@ -138,7 +155,8 @@
         <div class="antenna" id="antenna5" style="top: 67%; left: 82%;"></div> <!-- Océanie -->
     </div>
 
-    <div id="message">
+    <!-- Message final (toutes les antennes éteintes) -->
+    <div id="final-message">
         BRAVO à vous tous, ensemble vous avez éteint toutes les antennes, cela mérite une récompense !<br><br>
         Mais un dernier effort pour cela :<br><br>
         - Équipe Europe : cherchez R MAR<br>
@@ -147,7 +165,14 @@
         - Équipe Amérique du Sud : cherchez 342 COM<br>
         - Équipe Océanie : cherchez 330 BEJ
     </div>
-    <div id="error-message">Code incorrect ! La page va trembler...</div>
+
+    <!-- Message de succès pour une équipe -->
+    <div id="team-success-message">
+        Bravo, vous avez désactivé votre antenne ! Aidez les autres, cela vous sera bénéfique. Le monde compte sur vous !
+    </div>
+
+    <!-- Message d'erreur -->
+    <div id="error-message">Mot de passe incorrect</div>
 
     <!-- Pages dédiées aux équipes (superposées à la carte) -->
     <div id="team-pages">
@@ -230,6 +255,13 @@
                 document.getElementById(`antenna${teamNumber}`).classList.add('off');
                 antennas[teamNumber] = false;
                 input.value = '';
+
+                // Afficher le message de succès pour l'équipe
+                document.getElementById('team-success-message').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('team-success-message').style.display = 'none';
+                }, 3000); // Le message disparaît après 3 secondes
+
                 checkAllAntennasOff();
             } else {
                 // Faire trembler la page et afficher un message d'erreur
@@ -238,7 +270,7 @@
                 setTimeout(() => {
                     document.body.classList.remove('shake');
                     document.getElementById('error-message').style.display = 'none';
-                }, 1000);
+                }, 3000); // Le message d'erreur disparaît après 3 secondes
                 input.value = '';
             }
         }
@@ -248,7 +280,7 @@
             const allOff = Object.values(antennas).every(status => !status);
             if (allOff) {
                 document.getElementById('map-container').style.display = 'none';
-                document.getElementById('message').style.display = 'block';
+                document.getElementById('final-message').style.display = 'block';
             }
         }
     </script>

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escape Game - Antennes Relais</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #000;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        #map-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('https://raw.githubusercontent.com/AurianeCDI/escape-game-antennes/84a8836ee33a3ac2876362725fc7ba907b4bf752/carte%20du%20monde.webp');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        .antenna {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: red;
+            box-shadow: 0 0 20px 10px rgba(255, 0, 0, 0.9);
+            animation: blink 1.5s infinite alternate;
+        }
+        .antenna.off {
+            background-color: #555;
+            box-shadow: none;
+            animation: none;
+        }
+        #message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            color: #00FF00;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 30px;
+            border-radius: 10px;
+            display: none;
+            z-index: 100;
+            max-width: 80%;
+            text-align: left; /* Alignement à gauche pour une meilleure lisibilité */
+            line-height: 1.6; /* Espacement entre les lignes */
+        }
+        #error-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            color: #FF0000;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            z-index: 100;
+        }
+        .team-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 50;
+        }
+        .team-title {
+            font-size: 48px;
+            color: white;
+            margin-bottom: 20px;
+        }
+        .team-input {
+            padding: 15px;
+            font-size: 24px;
+            width: 300px;
+            text-align: center;
+            border: 2px solid white;
+            border-radius: 5px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        .team-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 24px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        @keyframes blink {
+            from { opacity: 1; }
+            to { opacity: 0.3; }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-20px); }
+            40%, 80% { transform: translateX(20px); }
+        }
+        .shake {
+            animation: shake 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <!-- Carte centrale (plein écran) -->
+    <div id="map-container">
+        <!-- 5 points, un par continent -->
+        <div class="antenna" id="antenna1" style="top: 27%; left: 48%;"></div> <!-- Europe -->
+        <div class="antenna" id="antenna2" style="top: 50%; left: 50%;"></div> <!-- Afrique -->
+        <div class="antenna" id="antenna3" style="top: 40%; left: 70%;"></div> <!-- Asie -->
+        <div class="antenna" id="antenna4" style="top: 60%; left: 30%;"></div> <!-- Amérique du Sud -->
+        <div class="antenna" id="antenna5" style="top: 67%; left: 82%;"></div> <!-- Océanie -->
+    </div>
+
+    <div id="message">
+        BRAVO à vous tous, ensemble vous avez éteint toutes les antennes, cela mérite une récompense !<br><br>
+        Mais un dernier effort pour cela :<br><br>
+        - Équipe Europe : cherchez R MAR<br>
+        - Équipe Afrique : cherchez R BOR<br>
+        - Équipe Asie : cherchez R DES<br>
+        - Équipe Amérique du Sud : cherchez 342 COM<br>
+        - Équipe Océanie : cherchez 330 BEJ
+    </div>
+    <div id="error-message">Code incorrect ! La page va trembler...</div>
+
+    <!-- Pages dédiées aux équipes -->
+    <div id="team-pages">
+        <!-- Page pour l'Europe (team=1) -->
+        <div id="team1-page" class="team-page">
+            <h2 class="team-title">Équipe Europe</h2>
+            <p style="color: white; font-size: 24px;">Entrez le code pour désactiver l'antenne de l'Europe :</p>
+            <input type="text" id="team1-input" class="team-input" placeholder="Code Europe">
+            <button onclick="checkCode(1, '467914')">Valider</button>
+        </div>
+
+        <!-- Page pour l'Afrique (team=2) -->
+        <div id="team2-page" class="team-page">
+            <h2 class="team-title">Équipe Afrique</h2>
+            <p style="color: white; font-size: 24px;">Entrez le code pour désactiver l'antenne de l'Afrique :</p>
+            <input type="text" id="team2-input" class="team-input" placeholder="Code Afrique">
+            <button onclick="checkCode(2, '384929')">Valider</button>
+        </div>
+
+        <!-- Page pour l'Asie (team=3) -->
+        <div id="team3-page" class="team-page">
+            <h2 class="team-title">Équipe Asie</h2>
+            <p style="color: white; font-size: 24px;">Entrez le code pour désactiver l'antenne de l'Asie :</p>
+            <input type="text" id="team3-input" class="team-input" placeholder="Code Asie">
+            <button onclick="checkCode(3, '823496')">Valider</button>
+        </div>
+
+        <!-- Page pour l'Amérique du Sud (team=4) -->
+        <div id="team4-page" class="team-page">
+            <h2 class="team-title">Équipe Amérique du Sud</h2>
+            <p style="color: white; font-size: 24px;">Entrez le code pour désactiver l'antenne de l'Amérique du Sud :</p>
+            <input type="text" id="team4-input" class="team-input" placeholder="Code Amérique du Sud">
+            <button onclick="checkCode(4, '195476')">Valider</button>
+        </div>
+
+        <!-- Page pour l'Océanie (team=5) -->
+        <div id="team5-page" class="team-page">
+            <h2 class="team-title">Équipe Océanie</h2>
+            <p style="color: white; font-size: 24px;">Entrez le code pour désactiver l'antenne de l'Océanie :</p>
+            <input type="text" id="team5-input" class="team-input" placeholder="Code Océanie">
+            <button onclick="checkCode(5, '397152')">Valider</button>
+        </div>
+    </div>
+
+    <script>
+        // Codes corrects pour chaque équipe
+        const correctCodes = {
+            1: '467914',  // Europe
+            2: '384929',  // Afrique
+            3: '823496',  // Asie
+            4: '195476',  // Amérique du Sud
+            5: '397152'   // Océanie
+        };
+
+        // État des antennes (allumées = true, éteintes = false)
+        let antennas = {
+            1: true,
+            2: true,
+            3: true,
+            4: true,
+            5: true
+        };
+
+        // Récupère le paramètre 'team' dans l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const teamNumber = urlParams.get('team');
+
+        // Affiche la page de l'équipe correspondante ou la carte
+        if (teamNumber) {
+            document.getElementById(`team${teamNumber}-page`).style.display = 'flex';
+        } else {
+            document.getElementById('map-container').style.display = 'block';
+        }
+
+        // Fonction pour vérifier le code
+        function checkCode(teamNumber, correctCode) {
+            const input = document.getElementById(`team${teamNumber}-input`);
+            const enteredCode = input.value.trim();
+
+            if (enteredCode === correctCode) {
+                // Éteindre l'antenne
+                document.getElementById(`antenna${teamNumber}`).classList.add('off');
+                antennas[teamNumber] = false;
+                input.value = '';
+                checkAllAntennasOff();
+            } else {
+                // Faire trembler la page et afficher un message d'erreur
+                document.body.classList.add('shake');
+                document.getElementById('error-message').style.display = 'block';
+                setTimeout(() => {
+                    document.body.classList.remove('shake');
+                    document.getElementById('error-message').style.display = 'none';
+                }, 1000);
+                input.value = '';
+            }
+        }
+
+        // Fonction pour vérifier si toutes les antennes sont éteintes
+        function checkAllAntennasOff() {
+            const allOff = Object.values(antennas).every(status => !status);
+            if (allOff) {
+                document.getElementById('map-container').style.display = 'none';
+                document.getElementById('message').style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

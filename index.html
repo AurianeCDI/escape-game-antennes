@@ -19,10 +19,11 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background-image: url('https://raw.githubusercontent.com/AurianeCDI/escape-game-antennes/84a8836ee33a3ac2876362725fc7ba907b4bf752/carte%20du%20monde.webp');
+            background-image: url('https://raw.githubusercontent.com/AurianeCDI/escape-game-antennes/main/carte%20du%20monde.webp');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
+            z-index: 1;
         }
         .antenna {
             position: absolute;
@@ -32,6 +33,7 @@
             background-color: red;
             box-shadow: 0 0 20px 10px rgba(255, 0, 0, 0.9);
             animation: blink 1.5s infinite alternate;
+            z-index: 2;
         }
         .antenna.off {
             background-color: #555;
@@ -51,8 +53,8 @@
             display: none;
             z-index: 100;
             max-width: 80%;
-            text-align: left; /* Alignement à gauche pour une meilleure lisibilité */
-            line-height: 1.6; /* Espacement entre les lignes */
+            text-align: left;
+            line-height: 1.6;
         }
         #error-message {
             position: fixed;
@@ -73,12 +75,12 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background-color: rgba(0, 0, 0, 0.8);
+            background-color: rgba(0, 0, 0, 0.5);
             display: none;
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            z-index: 50;
+            z-index: 10;
         }
         .team-title {
             font-size: 48px;
@@ -126,7 +128,7 @@
     </style>
 </head>
 <body>
-    <!-- Carte centrale (plein écran) -->
+    <!-- Carte centrale (toujours visible) -->
     <div id="map-container">
         <!-- 5 points, un par continent -->
         <div class="antenna" id="antenna1" style="top: 27%; left: 48%;"></div> <!-- Europe -->
@@ -147,7 +149,7 @@
     </div>
     <div id="error-message">Code incorrect ! La page va trembler...</div>
 
-    <!-- Pages dédiées aux équipes -->
+    <!-- Pages dédiées aux équipes (superposées à la carte) -->
     <div id="team-pages">
         <!-- Page pour l'Europe (team=1) -->
         <div id="team1-page" class="team-page">
@@ -213,11 +215,9 @@
         const urlParams = new URLSearchParams(window.location.search);
         const teamNumber = urlParams.get('team');
 
-        // Affiche la page de l'équipe correspondante ou la carte
+        // Affiche la page de l'équipe correspondante
         if (teamNumber) {
             document.getElementById(`team${teamNumber}-page`).style.display = 'flex';
-        } else {
-            document.getElementById('map-container').style.display = 'block';
         }
 
         // Fonction pour vérifier le code

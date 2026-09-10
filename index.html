@@ -174,9 +174,58 @@
     40%, 80% { transform: translateX(8px); }
   }
 
+  /* ---------- Écran de défaite (temps écoulé) ---------- */
+  #doom-screen {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background: #000;
+    color: var(--red);
+    text-align: center;
+    padding: 20px;
+  }
+  #doom-screen.exploding { animation: explode 1.2s ease-out; }
+  @keyframes explode {
+    0%   { background: #fff; }
+    10%  { background: #ff2d2d; }
+    20%  { background: #000; }
+    35%  { background: #ff2d2d; }
+    50%  { background: #000; }
+    65%  { background: #ff2d2d; }
+    100% { background: #000; }
+  }
+  #doom-screen h1 {
+    font-size: 3rem;
+    margin: 0 0 20px;
+    animation: doom-pulse 1.5s infinite alternate;
+  }
+  #doom-screen p {
+    font-size: 1.3rem;
+    color: #ddd;
+    max-width: 700px;
+    line-height: 1.6;
+  }
+  #doom-screen img {
+    max-width: 90%;
+    max-height: 45vh;
+    margin-top: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 30px rgba(255,45,45,0.6);
+  }
+  @keyframes doom-pulse {
+    from { text-shadow: 0 0 10px #ff2d2d, 0 0 20px #ff2d2d; }
+    to   { text-shadow: 0 0 30px #ff0000, 0 0 60px #ff0000; }
+  }
+
   @media (max-width: 600px) {
     .antenna { width: 32px; height: 32px; }
     #final-message { font-size: 1.8rem; }
+    #doom-screen h1 { font-size: 2rem; }
+    #doom-screen p { font-size: 1rem; }
   }
 </style>
 </head>
@@ -214,6 +263,15 @@
     </div>
   </div>
 
+  <!-- Écran de défaite : affiché si l'heure limite est dépassée -->
+  <div id="doom-screen">
+    <h1>💀 PERDU 💀</h1>
+    <p>
+      Vous avez perdu, tous le monde va devenir un chihuahua !
+    </p>
+    <img src="https://raw.githubusercontent.com/AurianeCDI/escape-game-antennes/main/rue%20pleine%20de%20chihuahua.jpg" alt="Rue pleine de chihuahua">
+  </div>
+
   <!-- Message affiché si la configuration Supabase n'a pas été renseignée -->
   <div id="config-error">
     ⚠️ Configuration Supabase manquante ou invalide.<br>
@@ -243,9 +301,24 @@
     5: { name: "Océanie",             password: "397152" }
   };
 
+  // =========================================================================
+  // 3) HEURES LIMITES — les sonneries du lycée (format "HH:MM")
+  //    Au chargement de la page, le jeu retient automatiquement la
+  //    PROCHAINE sonnerie à venir dans cette liste et s'en sert comme
+  //    heure limite pour la partie en cours. Si elle est atteinte et
+  //    qu'il reste au moins une antenne allumée, l'écran de défaite
+  //    s'affiche automatiquement (sur CHAQUE écran ouvert).
+  // =========================================================================
+  const HEURES_LIMITES = [
+    "09:25", "10:20", "11:35", "12:25",
+    "14:40", "15:35", "16:40", "17:30"
+  ];
+
   let antennas = {1: true, 2: true, 3: true, 4: true, 5: true};
   let currentTeam = null;
   let client = null;
+  let doomTriggered = false;
+  let deadline = null;
 
   function isConfigFilledIn() {
     return SUPABASE_URL && SUPABASE_ANON_KEY &&
@@ -277,9 +350,49 @@
     if (teamParam && TEAMS[teamParam]) {
       currentTeam = teamParam;
       showTeamView(teamParam);
+      document.getElementById('team-input').addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') checkCode();
+      });
     } else {
       showCentralView();
     }
+
+    deadline = getNextDeadline();
+    setInterval(checkDeadline, 1000);
+  }
+
+  function getNextDeadline() {
+    const now = new Date();
+    const todaysBells = HEURES_LIMITES
+      .map(t => {
+        const [h, m] = t.split(':').map(Number);
+        const d = new Date();
+        d.setHours(h, m, 0, 0);
+        return d;
+      })
+      .sort((a, b) => a - b);
+    return todaysBells.find(d => d > now) || null; // null = plus aucune sonnerie aujourd'hui
+  }
+
+  function checkDeadline() {
+    if (doomTriggered || !deadline) return;
+    const allOff = Object.values(antennas).every(status => !status);
+    if (allOff) return; // victoire avant l'heure limite : pas de défaite
+    if (new Date() >= deadline) {
+      triggerDoom();
+    }
+  }
+
+  function triggerDoom() {
+    if (doomTriggered) return;
+    doomTriggered = true;
+    document.getElementById('map-container').style.display = 'none';
+    document.getElementById('team-view').style.display = 'none';
+    document.getElementById('reset-button').style.display = 'none';
+    document.getElementById('final-message').style.display = 'none';
+    const doom = document.getElementById('doom-screen');
+    doom.style.display = 'flex';
+    doom.classList.add('exploding');
   }
 
   async function loadAntennas() {
@@ -320,9 +433,12 @@
     document.getElementById('team-title').textContent = 'Équipe ' + TEAMS[teamNumber].name;
 
     const input = document.getElementById('team-input');
-    input.addEventListener('keyup', (e) => {
-      if (e.key === 'Enter') checkCode();
-    });
+    input.style.display = '';
+    input.value = '';
+    document.getElementById('team-submit').style.display = '';
+    document.getElementById('team-success-message').style.display = 'none';
+    document.getElementById('already-done-message').style.display = 'none';
+    document.getElementById('error-message').style.display = 'none';
 
     if (!antennas[teamNumber]) {
       revealAlreadyDone();
@@ -351,6 +467,25 @@
     if (currentTeam && !antennas[currentTeam]) {
       const successMsg = document.getElementById('team-success-message');
       if (successMsg.style.display !== 'block') revealAlreadyDone();
+    }
+
+    // Si une réinitialisation globale vient d'arriver pendant l'écran de défaite,
+    // on en sort automatiquement, sur CE poste aussi (pas besoin de recharger la page).
+    if (doomTriggered && Object.values(antennas).every(status => status === true)) {
+      clearDoom();
+    }
+  }
+
+  function clearDoom() {
+    doomTriggered = false;
+    deadline = getNextDeadline();
+    const doom = document.getElementById('doom-screen');
+    doom.style.display = 'none';
+    doom.classList.remove('exploding');
+    if (currentTeam) {
+      showTeamView(currentTeam);
+    } else {
+      showCentralView();
     }
   }
 
@@ -394,7 +529,12 @@
   async function resetGame() {
     if (!confirm("Réinitialiser le jeu pour toutes les équipes ?")) return;
     antennas = {1: true, 2: true, 3: true, 4: true, 5: true};
+    doomTriggered = false;
+    deadline = getNextDeadline();
+    document.getElementById('doom-screen').style.display = 'none';
+    document.getElementById('doom-screen').classList.remove('exploding');
     document.getElementById('map-container').style.display = 'block';
+    document.getElementById('reset-button').style.display = 'block';
     document.getElementById('final-message').style.display = 'none';
     const { error } = await client.from('antennas').update({ active: true }).in('id', [1, 2, 3, 4, 5]);
     if (error) console.error(error);

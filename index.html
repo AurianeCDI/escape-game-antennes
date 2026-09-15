@@ -72,6 +72,22 @@
   }
   #reset-button:hover { background: #333; }
 
+  #timer {
+    display: none;
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 6;
+    padding: 10px 16px;
+    background: #222;
+    color: #fff;
+    border: 1px solid #666;
+    border-radius: 6px;
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+  }
+  #timer.timer-warning { color: var(--red); border-color: var(--red); }
+
   #final-message {
     display: none;
     position: fixed;
@@ -209,13 +225,6 @@
     max-width: 700px;
     line-height: 1.6;
   }
-  #doom-screen img {
-    max-width: 90%;
-    max-height: 45vh;
-    margin-top: 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 30px rgba(255,45,45,0.6);
-  }
   @keyframes doom-pulse {
     from { text-shadow: 0 0 10px #ff2d2d, 0 0 20px #ff2d2d; }
     to   { text-shadow: 0 0 30px #ff0000, 0 0 60px #ff0000; }
@@ -240,6 +249,7 @@
     <div class="antenna" id="antenna5" style="top: 67%; left: 82%;"></div>
   </div>
   <button id="reset-button" onclick="resetGame()">Réinitialiser</button>
+  <div id="timer"></div>
   <div id="final-message">
     BRAVO à vous tous, ensemble vous avez éteint toutes les antennes, cela mérite une récompense !<br><br>
     Mais un dernier effort pour cela :<br><br>
@@ -267,9 +277,9 @@
   <div id="doom-screen">
     <h1>💀 PERDU 💀</h1>
     <p>
-      Vous avez perdu, tous le monde va devenir un chihuahua !
+      Le temps est écoulé... Toutes les antennes n'ont pas été désactivées à temps.<br><br>
+      Le monde va être envahi par les zombies.
     </p>
-    <img src="https://raw.githubusercontent.com/AurianeCDI/escape-game-antennes/main/rue%20pleine%20de%20chihuahua.jpg" alt="Rue pleine de chihuahua">
   </div>
 
   <!-- Message affiché si la configuration Supabase n'a pas été renseignée -->
@@ -358,7 +368,11 @@
     }
 
     deadline = getNextDeadline();
-    setInterval(checkDeadline, 1000);
+    updateTimerDisplay();
+    setInterval(() => {
+      checkDeadline();
+      updateTimerDisplay();
+    }, 1000);
   }
 
   function getNextDeadline() {
@@ -381,6 +395,29 @@
     if (new Date() >= deadline) {
       triggerDoom();
     }
+  }
+
+  function updateTimerDisplay() {
+    const timerEl = document.getElementById('timer');
+    const allOff = Object.values(antennas).every(status => !status);
+
+    if (!deadline || doomTriggered || allOff) {
+      timerEl.style.display = 'none';
+      return;
+    }
+
+    const remainingMs = deadline - new Date();
+    if (remainingMs <= 0) {
+      timerEl.style.display = 'none';
+      return;
+    }
+
+    const totalSeconds = Math.floor(remainingMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    timerEl.textContent = '⏱ ' + minutes + ':' + String(seconds).padStart(2, '0');
+    timerEl.classList.toggle('timer-warning', totalSeconds <= 60);
+    timerEl.style.display = 'block';
   }
 
   function triggerDoom() {
@@ -487,6 +524,7 @@
     } else {
       showCentralView();
     }
+    updateTimerDisplay();
   }
 
   async function checkCode() {
@@ -524,6 +562,7 @@
     } else if (!currentTeam) {
       document.getElementById('map-container').style.display = 'block';
     }
+    updateTimerDisplay();
   }
 
   async function resetGame() {
@@ -536,6 +575,7 @@
     document.getElementById('map-container').style.display = 'block';
     document.getElementById('reset-button').style.display = 'block';
     document.getElementById('final-message').style.display = 'none';
+    updateTimerDisplay();
     const { error } = await client.from('antennas').update({ active: true }).in('id', [1, 2, 3, 4, 5]);
     if (error) console.error(error);
   }

@@ -238,6 +238,37 @@
     to   { text-shadow: 0 0 30px #ff0000, 0 0 60px #ff0000; }
   }
 
+  /* ---------- Vidéo de réinitialisation ---------- */
+  #video-screen {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+  }
+  #reset-video {
+    max-width: 100%;
+    max-height: 100%;
+  }
+  #video-play-button {
+    position: absolute;
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    font-size: 2.2rem;
+    color: #000;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-left: 6px; /* recentre visuellement le triangle ▶ */
+  }
+  #video-play-button:hover { background: #fff; }
+
   @media (max-width: 600px) {
     .antenna { width: 32px; height: 32px; }
     #final-message { font-size: 1.8rem; }
@@ -280,6 +311,12 @@
       <div id="error-message">❌ Mot de passe incorrect</div>
       <div id="already-done-message">Votre antenne est déjà désactivée.</div>
     </div>
+  </div>
+
+  <!-- Vidéo affichée à chaque réinitialisation (carte centrale uniquement) -->
+  <div id="video-screen">
+    <video id="reset-video" src="Op_ration_Chihuahua_Global.mp4" playsinline></video>
+    <button id="video-play-button" onclick="playResetVideo()" aria-label="Lecture">▶</button>
   </div>
 
   <!-- Écran de défaite : affiché si l'heure limite est dépassée -->
@@ -382,6 +419,25 @@
       checkDeadline();
       updateTimerDisplay();
     }, 1000);
+
+    document.getElementById('reset-video').addEventListener('ended', hideResetVideo);
+  }
+
+  function showResetVideo() {
+    const video = document.getElementById('reset-video');
+    video.pause();
+    video.currentTime = 0;
+    document.getElementById('video-play-button').style.display = 'flex';
+    document.getElementById('video-screen').style.display = 'flex';
+  }
+
+  function playResetVideo() {
+    document.getElementById('video-play-button').style.display = 'none';
+    document.getElementById('reset-video').play();
+  }
+
+  function hideResetVideo() {
+    document.getElementById('video-screen').style.display = 'none';
   }
 
   function getNextDeadline() {
@@ -585,6 +641,7 @@
     document.getElementById('reset-button').style.display = 'block';
     document.getElementById('final-message').style.display = 'none';
     updateTimerDisplay();
+    showResetVideo();
     const { error } = await client.from('antennas').update({ active: true }).in('id', [1, 2, 3, 4, 5]);
     if (error) console.error(error);
   }

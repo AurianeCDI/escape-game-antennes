@@ -265,7 +265,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding-left: 6px; /* recentre visuellement le triangle ▶ */
+    padding-left: 6px;
   }
   #video-play-button:hover { background: #fff; }
 
@@ -450,13 +450,13 @@
         return d;
       })
       .sort((a, b) => a - b);
-    return todaysBells.find(d => d > now) || null; // null = plus aucune sonnerie aujourd'hui
+    return todaysBells.find(d => d > now) || null;
   }
 
   function checkDeadline() {
     if (doomTriggered || !deadline) return;
     const allOff = Object.values(antennas).every(status => !status);
-    if (allOff) return; // victoire avant l'heure limite : pas de défaite
+    if (allOff) return;
     if (new Date() >= deadline) {
       triggerDoom();
     }
@@ -565,14 +565,11 @@
     }
     checkAllAntennasOff();
 
-    // Si l'équipe affichée vient d'être désactivée ailleurs (rare), on le reflète.
     if (currentTeam && !antennas[currentTeam]) {
       const successMsg = document.getElementById('team-success-message');
       if (successMsg.style.display !== 'block') revealAlreadyDone();
     }
 
-    // Si une réinitialisation globale vient d'arriver pendant l'écran de défaite,
-    // on en sort automatiquement, sur CE poste aussi (pas besoin de recharger la page).
     if (doomTriggered && Object.values(antennas).every(status => status === true)) {
       clearDoom();
     }

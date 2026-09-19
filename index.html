@@ -265,9 +265,31 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding-left: 6px;
+    padding-left: 6px; /* recentre visuellement le triangle ▶ */
   }
   #video-play-button:hover { background: #fff; }
+
+  /* ---------- Alerte chihuahua (paliers du minuteur) ---------- */
+  #chihuahua-alert {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.75);
+  }
+  #chihuahua-alert img {
+    max-width: 70%;
+    max-height: 70%;
+    border-radius: 12px;
+    box-shadow: 0 0 40px rgba(255, 255, 255, 0.3);
+    animation: chihuahua-pop 0.3s ease-out;
+  }
+  @keyframes chihuahua-pop {
+    from { transform: scale(0.7); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
 
   @media (max-width: 600px) {
     .antenna { width: 32px; height: 32px; }
@@ -317,6 +339,11 @@
   <div id="video-screen">
     <video id="reset-video" src="Op_ration_Chihuahua_Global.mp4" playsinline></video>
     <button id="video-play-button" onclick="playResetVideo()" aria-label="Lecture">▶</button>
+  </div>
+
+  <!-- Alerte chihuahua : image affichée 5 secondes à certains paliers du minuteur -->
+  <div id="chihuahua-alert">
+    <img id="chihuahua-alert-img" src="" alt="Chihuahua">
   </div>
 
   <!-- Écran de défaite : affiché si l'heure limite est dépassée -->
@@ -370,11 +397,22 @@
     "14:40", "15:35", "16:40", "17:30"
   ];
 
+  // =========================================================================
+  // 4) ALERTES CHIHUAHUA — une image s'affiche 5 secondes quand il reste
+  //    ce nombre de minutes avant la prochaine sonnerie.
+  // =========================================================================
+  const CHIHUAHUA_ALERTS = [
+    { minutesBefore: 30, image: "chihuahua agriculteur.jpg" },
+    { minutesBefore: 20, image: "chihuahua medecin.jpg" },
+    { minutesBefore: 10, image: "chihuahua musclé.jpg" }
+  ];
+
   let antennas = {1: true, 2: true, 3: true, 4: true, 5: true};
   let currentTeam = null;
   let client = null;
   let doomTriggered = false;
   let deadline = null;
+  let triggeredAlerts = new Set();
 
   function isConfigFilledIn() {
     return SUPABASE_URL && SUPABASE_ANON_KEY &&
@@ -413,7 +451,7 @@
       showCentralView();
     }
 
-    deadline = getNextDeadline();
+    setNewDeadline();
     updateTimerDisplay();
     setInterval(() => {
       checkDeadline();
@@ -450,13 +488,35 @@
         return d;
       })
       .sort((a, b) => a - b);
-    return todaysBells.find(d => d > now) || null;
+    return todaysBells.find(d => d > now) || null; // null = plus aucune sonnerie aujourd'hui
+  }
+
+  function setNewDeadline() {
+    deadline = getNextDeadline();
+    triggeredAlerts = new Set();
+  }
+
+  function checkChihuahuaAlerts(totalSeconds) {
+    for (const alert of CHIHUAHUA_ALERTS) {
+      const threshold = alert.minutesBefore * 60;
+      if (!triggeredAlerts.has(alert.minutesBefore) && totalSeconds <= threshold) {
+        triggeredAlerts.add(alert.minutesBefore);
+        showChihuahuaAlert(alert.image);
+      }
+    }
+  }
+
+  function showChihuahuaAlert(imageSrc) {
+    document.getElementById('chihuahua-alert-img').src = imageSrc;
+    const el = document.getElementById('chihuahua-alert');
+    el.style.display = 'flex';
+    setTimeout(() => { el.style.display = 'none'; }, 5000);
   }
 
   function checkDeadline() {
     if (doomTriggered || !deadline) return;
     const allOff = Object.values(antennas).every(status => !status);
-    if (allOff) return;
+    if (allOff) return; // victoire avant l'heure limite : pas de défaite
     if (new Date() >= deadline) {
       triggerDoom();
     }
@@ -483,6 +543,8 @@
     timerEl.textContent = '⏱ ' + minutes + ':' + String(seconds).padStart(2, '0');
     timerEl.classList.toggle('timer-warning', totalSeconds <= 60);
     timerEl.style.display = 'block';
+
+    checkChihuahuaAlerts(totalSeconds);
   }
 
   function triggerDoom() {
@@ -565,11 +627,14 @@
     }
     checkAllAntennasOff();
 
+    // Si l'équipe affichée vient d'être désactivée ailleurs (rare), on le reflète.
     if (currentTeam && !antennas[currentTeam]) {
       const successMsg = document.getElementById('team-success-message');
       if (successMsg.style.display !== 'block') revealAlreadyDone();
     }
 
+    // Si une réinitialisation globale vient d'arriver pendant l'écran de défaite,
+    // on en sort automatiquement, sur CE poste aussi (pas besoin de recharger la page).
     if (doomTriggered && Object.values(antennas).every(status => status === true)) {
       clearDoom();
     }
@@ -577,7 +642,7 @@
 
   function clearDoom() {
     doomTriggered = false;
-    deadline = getNextDeadline();
+    setNewDeadline();
     const doom = document.getElementById('doom-screen');
     doom.style.display = 'none';
     doom.classList.remove('exploding');
@@ -631,7 +696,7 @@
     if (!confirm("Réinitialiser le jeu pour toutes les équipes ?")) return;
     antennas = {1: true, 2: true, 3: true, 4: true, 5: true};
     doomTriggered = false;
-    deadline = getNextDeadline();
+    setNewDeadline();
     document.getElementById('doom-screen').style.display = 'none';
     document.getElementById('doom-screen').classList.remove('exploding');
     document.getElementById('map-container').style.display = 'block';

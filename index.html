@@ -494,6 +494,18 @@
   function setNewDeadline() {
     deadline = getNextDeadline();
     triggeredAlerts = new Set();
+    // Si la nouvelle heure limite est déjà à moins de 30/20/10 min, on ne
+    // déclenche pas ces alertes immédiatement : on les marque comme déjà
+    // passées pour ce cycle, elles ne s'afficheront que si le compte à
+    // rebours les traverse réellement pendant la partie.
+    if (deadline) {
+      const remainingSeconds = Math.floor((deadline - new Date()) / 1000);
+      CHIHUAHUA_ALERTS.forEach(alert => {
+        if (remainingSeconds <= alert.minutesBefore * 60) {
+          triggeredAlerts.add(alert.minutesBefore);
+        }
+      });
+    }
   }
 
   function checkChihuahuaAlerts(totalSeconds) {
